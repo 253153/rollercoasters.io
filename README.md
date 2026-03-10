@@ -1,4 +1,5 @@
 # Endless Coaster VR
+<img width="1197" height="1048" alt="image" src="https://github.com/user-attachments/assets/cc986eb1-0061-453b-b720-b4c2a633d180" />
 
 A browser-based 3D procedural roller coaster game built with Three.js, TypeScript, and Vite. Generate unique coasters from segment-based templates, ride them in first-person, and regenerate endlessly.
 
