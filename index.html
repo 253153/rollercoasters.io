@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rollercoasters.io — Free Online VR Roller Coaster Simulator | WebXR</title>
+  <meta name="description" content="Ride endless procedurally generated roller coasters in your browser or VR headset. Works on Meta Quest, Apple Vision Pro, Google Cardboard, HTC Vive, Valve Index, and any WebXR-compatible device. Generate, customize, and share unique coasters — free, no download required." />
+  <meta name="keywords" content="roller coaster, VR, virtual reality, WebXR, roller coaster simulator, 3D roller coaster, browser game, online roller coaster, procedural generation, VR roller coaster, immersive, theme park, coaster builder, three.js, web game, free VR game, roller coaster ride, amusement park, VR experience, Meta Quest, Quest 3, Quest Pro, Oculus, Apple Vision Pro, Google Cardboard, HTC Vive, Valve Index, Pico, PlayStation VR, PSVR, mixed reality, XR, WebGL, first person ride" />
+  <meta name="author" content="Rollercoasters.io" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#0a0a1e" />
+  <link rel="canonical" href="https://rollercoasters.io/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎢</text></svg>" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://rollercoasters.io/" />
+  <meta property="og:title" content="Rollercoasters.io — Free Online VR Roller Coaster Simulator" />
+  <meta property="og:description" content="Ride endless procedurally generated roller coasters in your browser or VR headset. Works on Meta Quest, Apple Vision Pro, Google Cardboard, and more. Free, no download." />
+  <meta property="og:site_name" content="Rollercoasters.io" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://rollercoasters.io/" />
+  <meta name="twitter:title" content="Rollercoasters.io — Free Online VR Roller Coaster Simulator" />
+  <meta name="twitter:description" content="Ride endless procedurally generated roller coasters in your browser or VR headset. Works on Meta Quest, Apple Vision Pro, Google Cardboard, and more. Free, no download." />
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Rollercoasters.io",
+    "url": "https://rollercoasters.io/",
+    "description": "Free online VR roller coaster simulator. Ride endless procedurally generated roller coasters in your browser or VR headset. Supports Meta Quest, Apple Vision Pro, Google Cardboard, HTC Vive, Valve Index, and any WebXR device.",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Web",
+    "browserRequirements": "Requires WebGL 2.0. WebXR supported for VR headsets.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "genre": ["Simulation", "Virtual Reality"],
+    "inLanguage": "en"
+  }
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+    }
+
+    #app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      outline: none;
+    }
+
+    #ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #ui-overlay > * {
+      pointer-events: auto;
+    }
+
+    /* Flex wrapper that centers and stacks all start-screen panels */
+    #start-layout {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      width: 500px;
+      z-index: 10;
+    }
+
+    /* Shared glass panel style */
+    .glass-panel {
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(8px);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    /* Title */
+    #game-title {
+      text-align: center;
+      padding: 16px 28px 12px;
+    }
+
+    #game-title h1 {
+      font-size: 2.6rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000) drop-shadow(0 0 3px rgba(0,0,0,0.6));
+      margin: 0;
+    }
+
+    #game-title .subtitle {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.55);
+      margin-top: 4px;
+    }
+
+    /* Main Menu */
+    #main-menu {
+      padding: 28px 36px;
+      text-align: center;
+    }
+
+    .menu-section {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .menu-section label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: rgba(255, 255, 255, 0.5);
+      margin-bottom: 8px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-group button {
+      flex: 1;
+      padding: 10px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-group button:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    .btn-group button.active {
+      background: rgba(77, 150, 255, 0.3);
+      border-color: #4d96ff;
+      color: #fff;
+    }
+
+    .seed-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #fff;
+      font-size: 0.9rem;
+      font-family: 'Courier New', monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .seed-input:focus {
+      border-color: #4d96ff;
+    }
+
+    .menu-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .btn-primary {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #btn-generate {
+      background: linear-gradient(135deg, #4d96ff, #6bcb77);
+      color: #fff;
+    }
+
+    #btn-generate:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(77, 150, 255, 0.4);
+    }
+
+    #btn-ride {
+      background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+      color: #111;
+      display: none;
+    }
+
+    #btn-ride:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+    }
+
+    #btn-ride.visible {
+      display: block;
+    }
+
+    #btn-enter-vr {
+      background: linear-gradient(135deg, #9b59b6, #4d96ff);
+      color: #fff;
+      display: none;
+    }
+
+    #btn-enter-vr:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(155, 89, 182, 0.4);
+    }
+
+    #btn-enter-vr.visible {
+      display: block;
+    }
+
+    /* Ride HUD */
+    #ride-hud {
+      display: none;
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+    }
+
+    #ride-hud.visible {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .hud-speed {
+      font-size: 1.4rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
+
+    .hud-speed span {
+      font-size: 0.7rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .hud-btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 8px;
+      background: none;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      padding-left: 0;
+    }
+
+    .hud-btn:hover {
+      color: #fff;
+    }
+
+    /* Menu toggle button — visible during ride & results */
+    #btn-open-menu {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(10, 10, 30, 0.7);
+      backdrop-filter: blur(12px);
+      color: #fff;
+      font-size: 1.3rem;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      z-index: 20;
+    }
+
+    #btn-open-menu.visible {
+      display: flex;
+    }
+
+    #btn-open-menu:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Results Panel */
+    #results-panel {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(10, 10, 30, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 40px 48px;
+      min-width: 380px;
+      backdrop-filter: blur(20px);
+      text-align: center;
+    }
+
+    #results-panel.visible {
+      display: block;
+    }
+
+    #results-panel h2 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #ffd93d, #ff6b6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      text-align: left;
+      margin-bottom: 28px;
+    }
+
+    .stat-item {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 12px 16px;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: rgba(255, 255, 255, 0.45);
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .results-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .results-actions .btn-primary {
+      padding: 12px 20px;
+    }
+
+    #btn-ride-again {
+      background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+      color: #111;
+    }
+
+    #btn-new-coaster {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    #btn-share-results {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .share-toast {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(77, 150, 255, 0.9);
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    .share-toast.visible {
+      opacity: 1;
+    }
+
+    /* Debug Panel */
+    #debug-panel {
+      display: none;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 0.75rem;
+      font-family: 'Courier New', monospace;
+      max-width: 320px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    #debug-panel.visible {
+      display: block;
+    }
+
+    #debug-panel h3 {
+      font-size: 0.8rem;
+      margin-bottom: 8px;
+      color: #4d96ff;
+    }
+
+    .debug-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .debug-row .key {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .debug-row .val {
+      color: #6bcb77;
+    }
+
+    .debug-btn {
+      margin: 4px 2px;
+      padding: 4px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+
+    .debug-segments {
+      margin-top: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .generating-text {
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.85rem;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* Instructions below panel */
+    #instructions-bar {
+      text-align: center;
+      padding: 12px 20px;
+    }
+
+    .instructions-row {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .instructions-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    .instructions-item .key {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.68rem;
+      color: rgba(255, 255, 255, 0.6);
+      white-space: nowrap;
+    }
+
+    .instructions-devices {
+      margin-top: 10px;
+      font-size: 0.68rem;
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Devices bar below start panel */
+    #devices-bar {
+      text-align: center;
+      padding: 10px 20px;
+      font-size: 0.65rem;
+      color: rgba(255, 255, 255, 0.35);
+      line-height: 1.5;
+    }
+
+    #fps-counter {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-family: 'Courier New', monospace;
+      font-variant-numeric: tabular-nums;
+      color: rgba(255, 255, 255, 0.7);
+      pointer-events: none;
+      z-index: 30;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="ui-overlay">
+      <div id="start-layout">
+        <div id="game-title" class="glass-panel">
+          <h1>Rollercoasters.io</h1>
+          <p class="subtitle">Procedural Web XR Roller Coaster Generator</p>
+        </div>
+
+        <div id="main-menu" class="glass-panel">
+          <div class="menu-section">
+            <label>Ride Length</label>
+            <div class="btn-group" id="length-group">
+              <button data-value="short">Short</button>
+              <button data-value="medium" class="active">Medium</button>
+              <button data-value="long">Long</button>
+              <button data-value="extreme">Extreme</button>
+            </div>
+          </div>
+
+          <div class="menu-section">
+            <label>Intensity</label>
+            <div class="btn-group" id="intensity-group">
+              <button data-value="chill">Chill</button>
+              <button data-value="thrill" class="active">Thrill</button>
+              <button data-value="insane">Insane</button>
+            </div>
+          </div>
+
+          <div class="menu-section">
+            <label>Seed</label>
+            <input type="text" id="seed-input" class="seed-input" placeholder="Random seed..." />
+          </div>
+
+          <p class="generating-text" id="generating-text">Generating coaster...</p>
+
+          <div class="menu-actions">
+            <button class="btn-primary" id="btn-generate">Generate</button>
+            <button class="btn-primary" id="btn-ride">Ride!</button>
+            <button class="btn-primary" id="btn-enter-vr">Enter VR</button>
+          </div>
+        </div>
+
+        <div id="devices-bar" class="glass-panel">
+          Supports Meta Quest 3 &middot; Quest Pro &middot; Apple Vision Pro &middot; Google Cardboard &middot; HTC Vive &middot; Valve Index &middot; Pico &middot; any WebXR&nbsp;device
+        </div>
+
+        <div id="instructions-bar" class="glass-panel">
+          <div class="instructions-row">
+            <span class="instructions-item"><span class="key">Drag</span> Orbit camera</span>
+            <span class="instructions-item"><span class="key">Scroll</span> Zoom</span>
+            <span class="instructions-item"><span class="key">Drag on ride</span> Look around</span>
+            <span class="instructions-item"><span class="key">VR</span> Head tracking</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-open-menu" title="Menu">&#9776;</button>
+
+      <div id="ride-hud">
+        <div class="hud-speed"><span id="hud-speed-value">0</span> <span>km/h</span></div>
+        <button class="hud-btn" id="btn-share-ride">Copy Link</button>
+      </div>
+
+      <div id="results-panel">
+        <h2>Ride Complete!</h2>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="results-actions">
+          <button class="btn-primary" id="btn-ride-again">Ride Again</button>
+          <button class="btn-primary" id="btn-share-results">Copy Link</button>
+          <button class="btn-primary" id="btn-new-coaster">New Coaster</button>
+        </div>
+      </div>
+
+      <div class="share-toast" id="share-toast">Link copied to clipboard!</div>
+
+      <div id="fps-counter">-- FPS</div>
+
+      <div id="debug-panel">
+        <h3>Debug</h3>
+        <div id="debug-info"></div>
+        <div id="debug-buttons"></div>
+        <div class="debug-segments" id="debug-segments"></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
